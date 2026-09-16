@@ -22,3 +22,5 @@ jobs:
         run: python3 tests/smoke.py --local dotnet
       - name: Validate production image
         run: docker build -t talume-validation .
+      - name: Run production image with disposable PostgreSQL and key volume
+        run: python3 tests/production-smoke.py

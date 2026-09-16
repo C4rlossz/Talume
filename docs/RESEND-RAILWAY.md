@@ -2,6 +2,19 @@
 
 Atualização de 16/09/2026, desenvolvida por Carlos com apoio de ChatGPT/Codex.
 
+## Situação da publicação
+
+- [GitHub privado](https://github.com/C4rlossz/Talume): integração enviada à branch `main`.
+- [Railway](https://railway.com/project/0c4fb946-f4ed-4ef5-9028-77d9de9351df): PostgreSQL online, serviço Talume e volumes criados.
+- Aplicação **ainda offline**, sem primeiro deployment: o Railway relatou que o repositório não foi encontrado ou não está acessível. A causa exata na instalação GitHub precisa ser conferida pelo proprietário.
+- Domínio reservado: `talume-production.up.railway.app`. A reserva não comprova publicação nem funcionamento.
+- Chave Resend, remetente autorizado e lista de e-mails de desenvolvedores ainda precisam ser preenchidos.
+- O workflow [Validate Talume](https://github.com/C4rlossz/Talume/actions) compila e verifica o transporte, a suíte HTTP/SMTP e a imagem Docker; inclui também execução descartável com PostgreSQL e teste de persistência das chaves. Não testa entrega real do Resend.
+
+Para liberar o deploy, abra GitHub → Settings → Applications → Installed GitHub Apps → Railway → Configure e conceda acesso especificamente a `Talume`. Se o Railway não estiver instalado, conecte sua conta GitHub pelo painel Railway e instale-o para esse repositório. No serviço Talume, confira a origem `C4rlossz/Talume`, branch `main`, e inicie o primeiro deploy. Não é necessário tornar o repositório público.
+
+As configurações Dockerfile, porta, healthcheck e volume foram aplicadas diretamente ao serviço. O Railway informou que `railway.toml` é legado; este piloto não depende de editar esse arquivo para configurar o serviço.
+
 ## E-mails
 
 `MailSender` envia confirmação, recuperação de senha e convites pela API HTTPS do Resend em produção. O ambiente Development continua usando SMTP/Mailpit. Convites preservam texto, HTML e as duas imagens CID.

@@ -16,7 +16,7 @@ Dados da demonstração são fictícios. Não há métricas de uso ou clientes r
 - Cadastro, confirmação de e-mail, recuperação de senha, clientes, serviços, propostas, projetos, tarefas e registro manual de pagamentos implementados.
 - Envio por API HTTPS do Resend em produção e SMTP/Mailpit no ambiente local. Ativação real depende da chave e do remetente autorizado.
 - Cadastro de desenvolvedores restrito por lista autorizada em produção; clientes continuam por convite. Próximas melhorias: simplificação do cadastro, migrations versionadas, backup com teste de restauração e correção de pagamentos com histórico.
-- Publicação no Railway e validação do piloto ainda pendentes.
+- Railway: projeto, PostgreSQL e volumes criados. Aplicação ainda offline: a integração Railway–GitHub precisa de acesso ao repositório privado. [Status e ativação](docs/RESEND-RAILWAY.md).
 
 ### Descrição curta para o GitHub
 
@@ -220,7 +220,7 @@ Esse comando inicia uma aplicação temporária com SQLite, cria uma caixa SMTP 
 
 ## Publicar no Railway
 
-A configuração está preparada, mas nenhuma publicação no Railway foi realizada. O repositório escolhido para o projeto é `C4rlossz/Talume`, com visibilidade privada.
+O [projeto Talume no Railway](https://railway.com/project/0c4fb946-f4ed-4ef5-9028-77d9de9351df) foi criado com PostgreSQL ativo e volumes persistentes para o banco e as chaves da aplicação. O aplicativo ainda não foi implantado: o Railway não conseguiu acessar `C4rlossz/Talume`. Autorize esse repositório privado na integração GitHub do Railway. Veja [status e configuração de Resend](docs/RESEND-RAILWAY.md).
 
 1. Use o repositório privado `C4rlossz/Talume` como origem e autorize o acesso do Railway quando configurar a publicação. Mantenha arquivos `.env` e bancos locais fora do Git.
 2. Crie um serviço PostgreSQL no Railway e importe `docs/schema-postgres.sql` em um banco vazio, uma única vez.
