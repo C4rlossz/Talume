@@ -1,0 +1,24 @@
+name: Validate Talume
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Resend transport and pilot registration
+        run: dotnet run --project tests/Talume.MailTests -c Release
+      - name: Build application for isolated integration tests
+        run: dotnet build src/Talume.Web
+      - name: Existing HTTP and SMTP integration suite
+        run: python3 tests/smoke.py --local dotnet
+      - name: Validate production image
+        run: docker build -t talume-validation .
