@@ -100,7 +100,7 @@ public static class BusinessEndpoints
             db.Invitations.Add(invitation); await db.SaveChangesAsync();
             var url = (config["App:BaseUrl"] ?? "http://localhost:8080").TrimEnd('/') + "/Account?invite=" + token;
             try { await mail.SendInvitationAsync(c.Email, c.Name, url); }
-            catch (System.Net.Mail.SmtpException) { invitation.ExpiresAt = DateTime.UtcNow; await db.SaveChangesAsync(); return Results.Json(new { error = "Falha no envio. Confira o serviço de e-mail e tente novamente." }, statusCode: 503); }
+            catch (MailDeliveryException) { invitation.ExpiresAt = DateTime.UtcNow; await db.SaveChangesAsync(); return Results.Json(new { error = "Falha no envio. Confira o serviço de e-mail e tente novamente." }, statusCode: 503); }
             return Results.Ok(new { message = "Convite enviado por e-mail." });
         }).RequireAuthorization("Freelancer");
         api.MapGet("/services", async (AppDbContext db, ClaimsPrincipal u) => await db.CatalogServices.Where(x => x.OwnerId == u.UserId()).OrderBy(x => x.Name).ToListAsync()).RequireAuthorization("Freelancer");

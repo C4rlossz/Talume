@@ -16,5 +16,4 @@
 **/*.backup
 backups/
 preview/
-tests/
 docs/

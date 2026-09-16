@@ -36,3 +36,7 @@ O navegador normaliza PNGs com canvas preservando alfa. Novas propostas copiam a
 O convite SMTP é multipart/alternative com texto e HTML. O HTML usa tabelas e estilos inline; duas imagens PNG originais são incorporadas por Content-ID. Nomes e URLs são codificados para HTML. A API de Resend não faz parte desta atualização.
 
 O Compose distribuído agora usa localhost:8081, preservando a correção da porta feita durante o teste do usuário; a aplicação dentro do contêiner continua em 8080. O script SQL 003 é aditivo e executado na inicialização local após 002. Produção deve aplicar os scripts previamente.
+
+## Atualização 004: Resend e piloto
+
+O transporte agora seleciona Resend HTTPS em produção e SMTP no desenvolvimento. O cliente HTTP tem timeout e não registra conteúdo de mensagens ou credenciais. Falhas invalidam o desafio/convite e retornam 503. Testes com HTTP simulado bloqueiam o build em caso de regressão. O cadastro de desenvolvedores em produção usa uma lista de e-mails autorizados, vazia por padrão; a regra de convite do cliente permanece. Detalhes em [RESEND-RAILWAY.md](RESEND-RAILWAY.md).

@@ -35,6 +35,7 @@ builder.Services.AddAuthorization(o => o.AddPolicy("Freelancer", p => p.RequireR
 builder.Services.AddAntiforgery(o => o.HeaderName = "X-CSRF-TOKEN");
 builder.Services.AddRazorPages(o => { o.Conventions.AuthorizeFolder("/"); o.Conventions.AllowAnonymousToPage("/Account"); o.Conventions.AllowAnonymousToPage("/Error"); });
 builder.Services.AddScoped<MailSender>();
+builder.Services.AddHttpClient("Resend", client => client.Timeout = TimeSpan.FromSeconds(20));
 builder.Services.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(builder.Configuration["DataProtection:Path"] ?? ".keys")).SetApplicationName("Talume");
 builder.Services.AddRateLimiter(o => {
     o.RejectionStatusCode = 429;

@@ -37,9 +37,11 @@ public static class AuthEndpoints
             var client = await db.Clients.FindAsync(inv.ClientId);
             return Results.Ok(new { email = client!.Email, name = client.Name });
         });
-        auth.MapPost("/register", async (RegisterInput input, AppDbContext db, UserManager<AppUser> users, MailSender mail) => {
+        auth.MapPost("/register", async (RegisterInput input, AppDbContext db, UserManager<AppUser> users, MailSender mail, IConfiguration config, IWebHostEnvironment env) => {
             var email = input.Email.Trim().ToLowerInvariant();
             if (!EmailValid(email) || string.IsNullOrWhiteSpace(input.Name) || input.Name.Length > 100) return Error("Informe nome e e-mail válidos.");
+            if (string.IsNullOrWhiteSpace(input.InvitationToken) && !RegistrationPolicy.CanRegisterDeveloper(email, config, env))
+                return Results.Json(new { error = "O Talume está em piloto. O cadastro de desenvolvedores precisa de autorização." }, statusCode: 403);
             Invitation? inv = null;
             if (!string.IsNullOrWhiteSpace(input.InvitationToken)) {
                 var hash = Hash(input.InvitationToken);
@@ -119,7 +121,7 @@ public static class AuthEndpoints
         challenge.CodeHash = Hash(challenge.Id + ":" + code);
         db.EmailChallenges.Add(challenge); await db.SaveChangesAsync();
         try { await mail.SendAsync(user.Email!, "Seu código Talume", $"Seu código é {code}. Ele vale por 10 minutos e pode ser usado uma única vez.\n\nSe não solicitou, ignore este e-mail."); }
-        catch (SmtpException) { challenge.ExpiresAt = now; await db.SaveChangesAsync(); return Results.Json(new { error = "Não conseguimos enviar o e-mail. Confira o serviço de envio e solicite outro código." }, statusCode: 503); }
+        catch (MailDeliveryException) { challenge.ExpiresAt = now; await db.SaveChangesAsync(); return Results.Json(new { error = "Não conseguimos enviar o e-mail. Confira o serviço de envio e solicite outro código." }, statusCode: 503); }
         return Results.Ok(new { challengeId = challenge.Id, message = "Confira seu e-mail." });
     }
 }

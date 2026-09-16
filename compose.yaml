@@ -11,6 +11,7 @@ services:
       Demo__Seed: "true"
       App__BaseUrl: http://localhost:8081
       Mail__Host: mailpit
+      Mail__Provider: Smtp
       Mail__Port: "1025"
       Mail__From: talume@localhost
       Mail__UseTls: "false"

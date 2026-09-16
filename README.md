@@ -14,8 +14,8 @@ Dados da demonstração são fictícios. Não há métricas de uso ou clientes r
 
 - Base em ASP.NET Core / .NET 10, PostgreSQL e Docker, com áreas de desenvolvedor e cliente.
 - Cadastro, confirmação de e-mail, recuperação de senha, clientes, serviços, propostas, projetos, tarefas e registro manual de pagamentos implementados.
-- Envio atual por SMTP, com Mailpit no ambiente local. Integração com a API HTTPS do Resend ainda pendente.
-- Próximas melhorias: acesso de desenvolvedores por lista autorizada ou convite, simplificação do cadastro, migrations versionadas, backup com teste de restauração e correção de pagamentos com histórico.
+- Envio por API HTTPS do Resend em produção e SMTP/Mailpit no ambiente local. Ativação real depende da chave e do remetente autorizado.
+- Cadastro de desenvolvedores restrito por lista autorizada em produção; clientes continuam por convite. Próximas melhorias: simplificação do cadastro, migrations versionadas, backup com teste de restauração e correção de pagamentos com histórico.
 - Publicação no Railway e validação do piloto ainda pendentes.
 
 ### Descrição curta para o GitHub
@@ -98,7 +98,7 @@ Novos orçamentos guardam uma cópia da logo escolhida; mudar a logo da empresa 
 
 Em **Clientes → Convidar**, o e-mail agora tem saudação com o nome do cliente, logo do Talume, ilustração de etapas, botão “Acessar meus projetos”, link alternativo e validade de sete dias. A ilustração e o símbolo são PNGs incorporados ao e-mail via CID, com uma alternativa em texto simples. Não dependem de URLs públicas de imagens. Alguns clientes de e-mail podem bloquear a exibição de imagens; o botão, o link e o texto continuam disponíveis.
 
-Para conferir, cadastre um cliente de teste ainda sem acesso e abra o novo convite no Mailpit em `http://localhost:8025`. E-mails recebidos antes da atualização mantêm o visual anterior. O envio real por Resend/API continua sendo uma etapa futura.
+Para conferir, cadastre um cliente de teste ainda sem acesso e abra o novo convite no Mailpit em `http://localhost:8025`. E-mails recebidos antes da atualização mantêm o visual anterior. O envio real usa Resend/API após configurar a chave e um remetente autorizado; veja [configuração](docs/RESEND-RAILWAY.md).
 
 A demonstração visual do convite está em `preview/Talume-convite-previa.html`. O botão dessa prévia é ilustrativo; os e-mails enviados pelo aplicativo têm o link real do convite.
 
@@ -132,7 +132,7 @@ O desenvolvedor também pode criar sua própria conta pela tela inicial. Essa co
 
 **Docker local:** os e-mails chegam somente ao Mailpit. Mesmo ao cadastrar um endereço real, não haverá envio para a caixa externa. Isso permite testar sem contratar um provedor.
 
-**Envio real:** configure `Mail__Host`, `Mail__Port`, `Mail__Username`, `Mail__Password`, `Mail__From` e `Mail__UseTls` com um serviço SMTP. Use uma conexão STARTTLS suportada pelo provedor e configure o remetente/domínio conforme ele exigir. Não coloque credenciais no código nem no Git. Mantenha `App__BaseUrl` igual ao endereço público confiável da aplicação, pois ele aparece nos convites.
+**Envio real:** configure `Mail__Provider=Resend`, `Resend__ApiKey` e `Mail__From` com um remetente de domínio verificado no Resend. Veja [Resend e Railway](docs/RESEND-RAILWAY.md). Não coloque credenciais no código nem no Git. Mantenha `App__BaseUrl` igual ao endereço público confiável da aplicação, pois ele aparece nos convites.
 
 **WhatsApp:** o botão prepara uma mensagem e abre o WhatsApp; o desenvolvedor revisa e envia manualmente. Não há disparo automático nem integração com a API oficial nesta versão. Essa automação ficou planejada para uma etapa seguinte.
 
@@ -162,7 +162,7 @@ src/Talume.Web/
   Endpoints/AuthEndpoints.cs Cadastro, convite, confirmação e recuperação
   Endpoints/BusinessEndpoints.cs Clientes, serviços, orçamentos e projetos
   Services/Access.cs         Consultas com limites de acesso
-  Services/MailSender.cs     Envio por SMTP
+  Services/MailSender.cs     Resend HTTPS / SMTP local
   Pages/                    Páginas Razor e documento de orçamento
   wwwroot/app.js             Interações e chamadas ao backend
   wwwroot/app.css            Visual e responsividade
@@ -226,7 +226,7 @@ A configuração está preparada, mas nenhuma publicação no Railway foi realiz
 2. Crie um serviço PostgreSQL no Railway e importe `docs/schema-postgres.sql` em um banco vazio, uma única vez.
 3. Crie o serviço da aplicação usando o Dockerfile deste repositório.
 4. Configure as variáveis abaixo no serviço da aplicação.
-5. Gere o domínio, confira `/health` e teste convites com o envio real configurado. O Railway Hobby bloqueia SMTP: esta versão ainda precisa de integração por API HTTPS, como Resend, para esse plano. O MailSender atual usa SMTP; não basta inserir uma API key nas variáveis. Consulte https://docs.railway.com/networking/outbound-networking.
+5. Gere o domínio, confira `/health` e teste convites com o envio real configurado. Use a integração Resend HTTPS e a lista de cadastros autorizados descritas em [Resend e Railway](docs/RESEND-RAILWAY.md).
 
 Variáveis essenciais:
 
@@ -237,7 +237,8 @@ Variáveis essenciais:
 - `Demo__Seed=false`
 - `AllowedHosts=<dominio-gerado>`
 - `App__BaseUrl=https://<dominio-gerado>`
-- Configurações SMTP descritas acima.
+- `Mail__Provider=Resend`, `Resend__ApiKey` e `Mail__From`, descritos acima.
+- `Registration__AllowPublicFreelancers=false` e `Registration__AllowedEmails` com seus e-mails autorizados.
 - `DataProtection__Path=/app/keys`, com armazenamento persistente apropriado para manter as chaves. Sem persistência, republicações podem invalidar sessões. Se usar volume, assegure permissão de escrita ao usuário `app`.
 
 O aplicativo escuta na porta 8080. Configure essa porta como destino do domínio. Mantenha uma réplica nesta versão inicial. Não publique o Compose de desenvolvimento como produção: ele ativa exemplos e e-mails locais.
@@ -249,7 +250,7 @@ A base de banco e autenticação está implementada. A prévia HTML não usa ess
 Para um piloto com 1–3 desenvolvedores e cerca de 50 clientes:
 
 - Validar a primeira execução no Docker/PostgreSQL, incluindo reiniciar e conferir os dados persistidos. O ambiente de criação não tem Docker; a validação automatizada usou SQLite auxiliar.
-- Configurar hospedagem, HTTPS, domínio/base URL e remetente SMTP real; testar convite, confirmação e recuperação em uma caixa real.
+- Configurar hospedagem, HTTPS, domínio/base URL e remetente Resend real; testar convite, confirmação e recuperação em uma caixa real.
 - Configurar backup e testar a restauração do PostgreSQL; definir rotina de atualização do esquema e acompanhar erros do serviço.
 - Usar banco de produção sem contas fictícias, conferir permissões e estabelecer como atender solicitações de correção/exclusão de dados de clientes.
 - Testar os fluxos de ponta a ponta com algumas contas antes de convidar todos. Ainda não foi realizado teste de carga para prometer capacidade ou desempenho.
