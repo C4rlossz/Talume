@@ -168,7 +168,7 @@ src/Talume.Web/
   wwwroot/app.css            Visual e responsividade
 compose.yaml                 Aplicação + PostgreSQL + Mailpit
 Dockerfile                   Compilação e execução em contêiner
-railway.toml                 Preparação para hospedagem no Railway
+railway.toml                 Configuração legada; piloto configurado no serviço
 docs/schema-postgres.sql     Esquema PostgreSQL gerado pelo EF Core
 preview/Talume-previa.html   Prévia independente com dados fictícios
 tests/smoke.py               Testes de integração
@@ -223,7 +223,7 @@ Esse comando inicia uma aplicação temporária com SQLite, cria uma caixa SMTP 
 O [projeto Talume no Railway](https://railway.com/project/0c4fb946-f4ed-4ef5-9028-77d9de9351df) foi criado com PostgreSQL ativo e volumes persistentes para o banco e as chaves da aplicação. O aplicativo ainda não foi implantado: o Railway não conseguiu acessar `C4rlossz/Talume`. Autorize esse repositório privado na integração GitHub do Railway. Veja [status e configuração de Resend](docs/RESEND-RAILWAY.md).
 
 1. Use o repositório privado `C4rlossz/Talume` como origem e autorize o acesso do Railway quando configurar a publicação. Mantenha arquivos `.env` e bancos locais fora do Git.
-2. Crie um serviço PostgreSQL no Railway e importe `docs/schema-postgres.sql` em um banco vazio, uma única vez.
+2. O piloto já tem PostgreSQL com volume. Para o primeiro início nesse banco vazio, `Database__Initialize=true` foi configurado; após o deploy saudável, altere para `false`. Para instalações existentes, use atualização SQL revisada e backup.
 3. Crie o serviço da aplicação usando o Dockerfile deste repositório.
 4. Configure as variáveis abaixo no serviço da aplicação.
 5. Gere o domínio, confira `/health` e teste convites com o envio real configurado. Use a integração Resend HTTPS e a lista de cadastros autorizados descritas em [Resend e Railway](docs/RESEND-RAILWAY.md).
@@ -233,7 +233,7 @@ Variáveis essenciais:
 - `ASPNETCORE_ENVIRONMENT=Production`
 - `ConnectionStrings__Default=Host=<host>;Port=5432;Database=<banco>;Username=<usuario>;Password=<senha>` usando os dados do serviço PostgreSQL. Npgsql espera essa connection string; não cole uma URL `postgresql://` sem convertê-la.
 - `Database__Provider=Postgres`
-- `Database__Initialize=false` (o esquema já deve estar importado)
+- `Database__Initialize=false` após a criação inicial do esquema; no primeiro início do banco vazio do piloto, usar `true` uma única vez.
 - `Demo__Seed=false`
 - `AllowedHosts=<dominio-gerado>`
 - `App__BaseUrl=https://<dominio-gerado>`
