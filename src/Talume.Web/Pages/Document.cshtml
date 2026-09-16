@@ -1,0 +1,28 @@
+@page "/Document/{id:guid}"
+@model DocumentModel
+@using System.Globalization
+@{ var br = CultureInfo.GetCultureInfo("pt-BR"); var q = Model.Quote; var p = Model.Issuer; ViewData["Title"] = p.BusinessName + " · Proposta comercial"; }
+<link rel="stylesheet" href="~/proposal.css" asp-append-version="true">
+<div class="proposal-toolbar print-toolbar"><a class="btn" href="/">← Voltar</a><p>Para salvar, escolha “Salvar como PDF” e desative os cabeçalhos e rodapés do navegador.</p><button class="btn primary" data-action="print">Imprimir / Salvar PDF</button></div>
+<main class="proposal">
+    <header class="proposal-header"><div><span class="proposal-label">PROPOSTA COMERCIAL</span><div class="issuer-brand">@if(!string.IsNullOrEmpty(Model.LogoDataUrl)){<img class="issuer-logo" src="@Model.LogoDataUrl" alt="Logo de @p.BusinessName">}<div class="issuer-name">@p.BusinessName</div></div></div><div class="proposal-reference"><span class="proposal-label">REFERÊNCIA</span><strong>@q.Id.ToString()[..8].ToUpper()</strong><small>Emitida em @q.CreatedAt.ToString("dd/MM/yyyy")</small></div></header>
+    <section class="proposal-intro"><span class="proposal-label">UM PROJETO PARA @(string.IsNullOrWhiteSpace(q.Client.Company) ? q.Client.Name : q.Client.Company)</span><h1>@q.Title</h1><p>Escopo, investimento e condições para o seu próximo projeto.</p></section>
+    <div class="proposal-parties">
+        <section><h2>Prestador do serviço</h2><strong>@p.BusinessName</strong>
+            @if(!string.IsNullOrWhiteSpace(p.ResponsibleName)){<p>Responsável: @p.ResponsibleName</p>}
+            @if(!string.IsNullOrWhiteSpace(p.TaxId)){<p>CPF / CNPJ: @p.TaxId</p>}
+            @foreach(var contact in new[] {p.Email,p.Phone,p.Website,p.Address}.Where(x => !string.IsNullOrWhiteSpace(x))){<p>@contact</p>}
+        </section>
+        <section><h2>Preparada para</h2><strong>@(string.IsNullOrWhiteSpace(q.Client.Company) ? q.Client.Name : q.Client.Company)</strong>
+            @if(!string.IsNullOrWhiteSpace(q.Client.Company)){<p>Aos cuidados de @q.Client.Name</p>}
+            <p>@q.Client.Email</p><p class="proposal-validity">Válida até <b>@q.ValidUntil.ToString("dd/MM/yyyy")</b></p>
+        </section>
+    </div>
+    <section class="proposal-scope"><h2><span>01</span> Escopo e investimento</h2><table><thead><tr><th>Descrição do serviço</th><th>Qtd.</th><th>Valor unitário</th><th>Valor total</th></tr></thead><tbody>
+    @foreach(var line in q.Lines){<tr><td>@line.Description</td><td>@line.Quantity</td><td>@line.UnitPrice.ToString("C",br)</td><td>@((line.Quantity*line.UnitPrice).ToString("C",br))</td></tr>}
+    </tbody></table>
+    <div class="proposal-totals"><div><span>Subtotal</span><b>@q.Lines.Sum(x=>x.Quantity*x.UnitPrice).ToString("C",br)</b></div><div><span>Desconto</span><b>@q.Discount.ToString("C",br)</b></div><div class="proposal-grand-total"><span>Investimento total</span><strong>@q.Total.ToString("C",br)</strong></div></div></section>
+    <section class="proposal-terms"><h2><span>02</span> Condições da proposta</h2><p>@(string.IsNullOrWhiteSpace(q.Terms) ? "Condições a combinar entre prestador e cliente antes da aprovação." : q.Terms)</p></section>
+    <section class="proposal-next"><h2>Vamos dar o próximo passo?</h2><p>Confira os itens e as condições desta proposta. Para confirmar ou solicitar ajustes, entre em contato com @p.BusinessName.</p></section>
+    <footer class="proposal-footer"><div><strong>@p.BusinessName</strong><span>Proposta comercial · Não é nota fiscal.</span></div><div class="proposal-platform">Documento gerado com <b>talume<span>.</span></b></div></footer>
+</main>

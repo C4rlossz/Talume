@@ -1,0 +1,47 @@
+name: talume
+services:
+  app:
+    build: .
+    ports:
+      - "127.0.0.1:8081:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: Host=db;Port=5432;Database=talume;Username=talume;Password=${POSTGRES_PASSWORD:-talume_local_dev}
+      Database__Initialize: "true"
+      Demo__Seed: "true"
+      App__BaseUrl: http://localhost:8081
+      Mail__Host: mailpit
+      Mail__Port: "1025"
+      Mail__From: talume@localhost
+      Mail__UseTls: "false"
+      DataProtection__Path: /app/keys
+    volumes:
+      - app_keys:/app/keys
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    restart: unless-stopped
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: talume
+      POSTGRES_USER: talume
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-talume_local_dev}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U talume -d talume"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  mailpit:
+    image: axllent/mailpit:v1.27
+    ports:
+      - "127.0.0.1:8025:8025"
+    restart: unless-stopped
+volumes:
+  pg_data:
+  app_keys:

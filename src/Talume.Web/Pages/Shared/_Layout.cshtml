@@ -1,0 +1,3 @@
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken"><title>Talume · Seu trabalho em dia</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><script src="/theme.js" asp-append-version="true"></script><link rel="stylesheet" href="/app.css" asp-append-version="true"></head><body>@RenderBody()<script src="/app.js" asp-append-version="true" defer></script></body></html>

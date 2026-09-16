@@ -1,0 +1,283 @@
+{
+  "me": {
+    "displayName": "Carlos",
+    "email": "freelancer@talume.local",
+    "kind": "Freelancer",
+    "demo": true
+  },
+  "projects": [
+    {
+      "id": "7e8a79ca-8699-46a8-9796-c33063ea57d2",
+      "title": "Identidade visual · Café Horizonte",
+      "stage": "Em revisão",
+      "dueDate": "2026-09-13",
+      "value": 1800.0,
+      "clientName": "Rafael Lima",
+      "clientPending": "",
+      "taskCount": 1,
+      "doneCount": 0,
+      "paid": 0
+    },
+    {
+      "id": "dfb9a558-a1be-43d3-a004-7dbc4269a509",
+      "title": "Um novo site para o Estúdio Aurora",
+      "stage": "Em produção",
+      "dueDate": "2026-09-16",
+      "value": 2400.0,
+      "clientName": "Marina Costa",
+      "clientPending": "Enviar fotos da equipe para a página Sobre.",
+      "taskCount": 4,
+      "doneCount": 1,
+      "paid": 1200.0
+    },
+    {
+      "id": "bf30d5a0-4fa2-4fc5-80f5-b9f461fa7169",
+      "title": "Conteúdo de setembro",
+      "stage": "Briefing",
+      "dueDate": "2026-09-20",
+      "value": 900.0,
+      "clientName": "Beatriz Santos",
+      "clientPending": "",
+      "taskCount": 1,
+      "doneCount": 0,
+      "paid": 0
+    }
+  ],
+  "details": [
+    {
+      "id": "7e8a79ca-8699-46a8-9796-c33063ea57d2",
+      "title": "Identidade visual · Café Horizonte",
+      "stage": "Em revisão",
+      "dueDate": "2026-09-13",
+      "value": 1800.0,
+      "clientPending": "",
+      "quoteId": null,
+      "clientName": "Rafael Lima",
+      "phone": "",
+      "tasks": [
+        {
+          "id": "49d26049-ab12-4391-be4c-49dfaad31ed4",
+          "projectId": "7e8a79ca-8699-46a8-9796-c33063ea57d2",
+          "title": "Aplicar ajustes na apresentação",
+          "dueDate": "2026-09-11",
+          "done": false
+        }
+      ],
+      "updates": [
+        {
+          "id": "a22710a2-b05d-4e53-a889-a603f70286c2",
+          "projectId": "7e8a79ca-8699-46a8-9796-c33063ea57d2",
+          "text": "Primeira versão apresentada. Aguardando revisão.",
+          "internal": false,
+          "createdAt": "2026-09-11T19:15:08.6209549"
+        }
+      ],
+      "deliveries": [],
+      "installments": [
+        {
+          "id": "e7a1c252-4bfd-4427-84d8-0dd45f5b54cd",
+          "projectId": "7e8a79ca-8699-46a8-9796-c33063ea57d2",
+          "label": "Pagamento integral",
+          "amount": 1800.0,
+          "dueDate": "2026-09-13",
+          "paidAt": null
+        }
+      ]
+    },
+    {
+      "id": "dfb9a558-a1be-43d3-a004-7dbc4269a509",
+      "title": "Um novo site para o Estúdio Aurora",
+      "stage": "Em produção",
+      "dueDate": "2026-09-16",
+      "value": 2400.0,
+      "clientPending": "Enviar fotos da equipe para a página Sobre.",
+      "quoteId": null,
+      "clientName": "Marina Costa",
+      "phone": "",
+      "tasks": [
+        {
+          "id": "04884220-f68b-449d-a8b4-0e22bc4f65ca",
+          "projectId": "dfb9a558-a1be-43d3-a004-7dbc4269a509",
+          "title": "Organizar briefing e referências",
+          "dueDate": "2026-09-08",
+          "done": true
+        },
+        {
+          "id": "480dd00c-75df-48ee-bdb3-c000c1aa3ccd",
+          "projectId": "dfb9a558-a1be-43d3-a004-7dbc4269a509",
+          "title": "Finalizar a página inicial",
+          "dueDate": "2026-09-12",
+          "done": false
+        },
+        {
+          "id": "4e2023cd-78be-43b2-a528-0519ac71247f",
+          "projectId": "dfb9a558-a1be-43d3-a004-7dbc4269a509",
+          "title": "Adaptar layout para celular",
+          "dueDate": "2026-09-14",
+          "done": false
+        },
+        {
+          "id": "5cb75536-6558-421f-bbac-2cf4003029c5",
+          "projectId": "dfb9a558-a1be-43d3-a004-7dbc4269a509",
+          "title": "Revisar e preparar entrega",
+          "dueDate": "2026-09-16",
+          "done": false
+        }
+      ],
+      "updates": [
+        {
+          "id": "47d1566a-7ebb-4a0a-a56c-f02d0778b301",
+          "projectId": "dfb9a558-a1be-43d3-a004-7dbc4269a509",
+          "text": "Reservar duas horas para revisão técnica.",
+          "internal": true,
+          "createdAt": "2026-09-11T19:15:08.6206817"
+        },
+        {
+          "id": "05066552-26a9-4b82-8241-ee34367321fc",
+          "projectId": "dfb9a558-a1be-43d3-a004-7dbc4269a509",
+          "text": "A estrutura da página inicial está pronta. Próximo passo: inserir as imagens.",
+          "internal": false,
+          "createdAt": "2026-09-11T17:15:08.6206804"
+        },
+        {
+          "id": "68add47d-db85-41d5-8c7f-f3d97c19aacc",
+          "projectId": "dfb9a558-a1be-43d3-a004-7dbc4269a509",
+          "text": "Briefing aprovado. Desenvolvimento iniciado.",
+          "internal": false,
+          "createdAt": "2026-09-09T19:15:08.6206603"
+        }
+      ],
+      "deliveries": [],
+      "installments": [
+        {
+          "id": "83d50674-3154-4859-85f2-5637c430937d",
+          "projectId": "dfb9a558-a1be-43d3-a004-7dbc4269a509",
+          "label": "Entrada · 50%",
+          "amount": 1200.0,
+          "dueDate": "2026-09-06",
+          "paidAt": "2026-09-06T19:15:08.6208806"
+        },
+        {
+          "id": "f1c317e5-f8b5-40a0-9cc7-bedc6fd38f81",
+          "projectId": "dfb9a558-a1be-43d3-a004-7dbc4269a509",
+          "label": "Entrega · 50%",
+          "amount": 1200.0,
+          "dueDate": "2026-09-16",
+          "paidAt": null
+        }
+      ]
+    },
+    {
+      "id": "bf30d5a0-4fa2-4fc5-80f5-b9f461fa7169",
+      "title": "Conteúdo de setembro",
+      "stage": "Briefing",
+      "dueDate": "2026-09-20",
+      "value": 900.0,
+      "clientPending": "",
+      "quoteId": null,
+      "clientName": "Beatriz Santos",
+      "phone": "",
+      "tasks": [
+        {
+          "id": "16abfb9e-25c9-49d5-9a01-934628f6bdc8",
+          "projectId": "bf30d5a0-4fa2-4fc5-80f5-b9f461fa7169",
+          "title": "Alinhar pautas do mês",
+          "dueDate": "2026-09-10",
+          "done": false
+        }
+      ],
+      "updates": [
+        {
+          "id": "08db4298-7ec0-432b-89a9-3056a5527e8c",
+          "projectId": "bf30d5a0-4fa2-4fc5-80f5-b9f461fa7169",
+          "text": "Projeto iniciado. Vamos organizar as referências.",
+          "internal": false,
+          "createdAt": "2026-09-11T19:15:08.6209565"
+        }
+      ],
+      "deliveries": [],
+      "installments": []
+    }
+  ],
+  "clients": [
+    {
+      "id": "a2769d5b-6900-4346-b741-3b343543e8fd",
+      "ownerId": "6d75c88c-8d19-41aa-a21a-239e9f91327a",
+      "userId": null,
+      "name": "Beatriz Santos",
+      "company": "Forma Arquitetura",
+      "email": "beatriz@example.com",
+      "phone": "",
+      "notes": ""
+    },
+    {
+      "id": "2a5ee41a-38c1-477b-aa79-2606d221969e",
+      "ownerId": "6d75c88c-8d19-41aa-a21a-239e9f91327a",
+      "userId": "4d7dd8ae-dccf-4283-ae3e-adccbca5f989",
+      "name": "Marina Costa",
+      "company": "Estúdio Aurora",
+      "email": "cliente@talume.local",
+      "phone": "",
+      "notes": "Prefere contato no período da tarde."
+    },
+    {
+      "id": "c199c7b9-9d9b-4a0f-97b5-4c485a5b6f3e",
+      "ownerId": "6d75c88c-8d19-41aa-a21a-239e9f91327a",
+      "userId": null,
+      "name": "Rafael Lima",
+      "company": "Café Horizonte",
+      "email": "rafael@example.com",
+      "phone": "",
+      "notes": ""
+    }
+  ],
+  "services": [
+    {
+      "id": "424c01d8-77c9-4412-8e3d-1d46bfa3b424",
+      "ownerId": "6d75c88c-8d19-41aa-a21a-239e9f91327a",
+      "name": "Conteúdo para redes sociais",
+      "description": "Pacote com 12 peças para o feed.",
+      "basePrice": 900.0,
+      "estimatedDays": 7
+    },
+    {
+      "id": "19cf3be8-dcd2-4ca8-9a87-c202e93a8923",
+      "ownerId": "6d75c88c-8d19-41aa-a21a-239e9f91327a",
+      "name": "Identidade visual",
+      "description": "Logo, paleta e guia de aplicação.",
+      "basePrice": 1800.0,
+      "estimatedDays": 10
+    },
+    {
+      "id": "d84f2fb7-a8c0-4a4c-921d-09db73d8d2d2",
+      "ownerId": "6d75c88c-8d19-41aa-a21a-239e9f91327a",
+      "name": "Site institucional",
+      "description": "Até 5 páginas, layout responsivo e formulário de contato.",
+      "basePrice": 2400.0,
+      "estimatedDays": 15
+    }
+  ],
+  "quotes": [
+    {
+      "id": "94eec583-9f44-44f8-a0db-696d8a4a4925",
+      "clientId": "a2769d5b-6900-4346-b741-3b343543e8fd",
+      "clientName": "Beatriz Santos",
+      "title": "Site · Forma Arquitetura",
+      "status": "Enviado",
+      "validUntil": "2026-09-18",
+      "discount": 0.0,
+      "terms": "50% na aprovação e 50% na entrega. Inclui duas rodadas de revisão.",
+      "total": 2400.0,
+      "lines": [
+        {
+          "id": "e60d1744-833d-4769-b4a5-7a176cfdf7c3",
+          "quoteId": "94eec583-9f44-44f8-a0db-696d8a4a4925",
+          "description": "Site institucional · até 5 páginas",
+          "quantity": 1,
+          "unitPrice": 2400.0
+        }
+      ],
+      "createdAt": "2026-09-12T12:00:00Z"
+    }
+  ]
+}
