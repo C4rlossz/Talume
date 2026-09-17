@@ -15,7 +15,9 @@ jobs:
         with:
           dotnet-version: '10.0.x'
       - name: Resend transport and pilot registration
-        run: dotnet run --project tests/Talume.MailTests -c Release
+        run: dotnet run --project tests/Talume.MailTests -c Release -- --export-preview preview/Talume-codigo-previa.html
+      - name: Check that the preview matches the production email template
+        run: git diff --exit-code -- preview/Talume-codigo-previa.html
       - name: Build application for isolated integration tests
         run: dotnet build src/Talume.Web
       - name: Existing HTTP and SMTP integration suite

@@ -27,7 +27,25 @@ Check(handler.Authorization == "Bearer test-key-never-sent", "Bearer authenticat
 using (var payload = JsonDocument.Parse(handler.Body!)) {
     var p = payload.RootElement;
     Check(p.GetProperty("from").GetString() == config["Mail:From"] && p.GetProperty("to")[0].GetString() == "recipient@example.com", "sender and recipient");
-    Check(p.GetProperty("text").GetString() == "Seu código é 123456." && !p.TryGetProperty("html", out _), "plain text verification/reset messages");
+    Check(p.GetProperty("text").GetString() == "Seu código é 123456." && !p.TryGetProperty("html", out _), "generic plain text messages remain supported");
+}
+foreach (var purpose in new[] { "confirm", "reset" }) {
+    await sender.SendCodeAsync("recipient@example.com", "Carlos <script> & Cia", "012345", purpose);
+    using var payload = JsonDocument.Parse(handler.Body!);
+    var p = payload.RootElement;
+    var html = p.GetProperty("html").GetString()!;
+    var plain = p.GetProperty("text").GetString()!;
+    var title = purpose == "reset" ? "Redefina sua senha no Talume" : "Confirme seu e-mail no Talume";
+    Check(p.GetProperty("subject").GetString() == title && html.Contains(title), purpose + " subject and heading");
+    Check(html.Contains("012345") && plain.Contains("012345"), purpose + " code preserves leading zero in HTML and text");
+    Check(html.Contains("10 minutos") && plain.Contains("10 minutos") && html.Contains("Uso único"), purpose + " expiry and single-use instructions");
+    Check(html.Contains("Carlos &lt;script&gt; &amp; Cia") && !html.Contains("Carlos <script>"), purpose + " escapes recipient name");
+    Check(html.Contains("#213427") && html.Contains("#f2f5ee") && html.Contains("#bce27b"), purpose + " invitation color palette");
+    Check(html.Contains("Não compartilhe") && !html.Contains("href="), purpose + " code instructions without misleading confirmation link");
+    var attachments = p.GetProperty("attachments");
+    Check(attachments.GetArrayLength() == 2, purpose + " logo and illustration embedded");
+    foreach (var a in attachments.EnumerateArray())
+        Check(html.Contains("cid:" + a.GetProperty("content_id").GetString()), purpose + " matching image CID");
 }
 await sender.SendInvitationAsync("client@example.com", "Carlos <script>", "https://example.com/Account?invite=test");
 using (var payload = JsonDocument.Parse(handler.Body!)) {
@@ -74,6 +92,11 @@ Check(!RegistrationPolicy.CanRegisterDeveloper("stranger@example.com", config, e
 env.EnvironmentName = "Development";
 Check(RegistrationPolicy.CanRegisterDeveloper("stranger@example.com", config, env), "local development registration unchanged");
 Console.WriteLine($"{passed} checks passed. No real emails sent.");
+if (args.Length == 2 && args[0] == "--export-preview") {
+    string Asset(string name) => "data:image/png;base64," + Convert.ToBase64String(File.ReadAllBytes(Path.Combine(root, "mail", name)));
+    await File.WriteAllTextAsync(args[1], VerificationEmail.Html("Carlos", "123456", "confirm", Asset("talume-mark.png"), Asset("invitation-hero.png")));
+    Console.WriteLine("Preview exported with a fictional code.");
+}
 
 sealed class CaptureHandler : HttpMessageHandler {
     public string? Uri, Method, Authorization, Body;

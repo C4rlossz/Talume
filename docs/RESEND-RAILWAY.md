@@ -19,6 +19,20 @@ As configurações Dockerfile, porta, healthcheck e volume foram aplicadas diret
 
 `MailSender` envia confirmação, recuperação de senha e convites pela API HTTPS do Resend em produção. O ambiente Development continua usando SMTP/Mailpit. Convites preservam texto, HTML e as duas imagens CID.
 
+### Código com a identidade do Talume — 17/09/2026
+
+Clientes e desenvolvedores recebem o código em um e-mail com a mesma logo, ilustração e paleta do convite. A recuperação de senha usa o mesmo modelo com assunto e instruções próprios. O código permanece em texto selecionável, com alternativa de texto simples, validade de dez minutos e uso único. O HTML não confirma a conta sozinho: o usuário informa o código na tela do Talume e o servidor valida o desafio.
+
+A [prévia de confirmação](../preview/Talume-codigo-previa.html) contém o nome Carlos e o código fictício `123456`; não é um código válido. Para regenerar a partir do template real:
+
+```sh
+dotnet run --project tests/Talume.MailTests -c Release -- --export-preview preview/Talume-codigo-previa.html
+```
+
+O CI confere que a prévia corresponde ao template C#, que Resend recebe HTML/texto/imagens e que os fluxos de cliente, desenvolvedor e recuperação geram o e-mail com código pelo SMTP local. Não há envio a pessoas reais nos testes.
+
+Ter Resend integrado ao código não configura a conta do provedor. É necessário criar uma chave de envio e verificar um domínio próprio no Resend para enviar aos clientes. O remetente de teste `onboarding@resend.dev` só serve para testes destinados ao e-mail da própria conta Resend. Configure `Resend__ApiKey` e `Mail__From` diretamente nas variáveis do serviço Railway; os valores são ocultos para o conector, portanto a existência dos nomes não comprova que estejam preenchidos ou válidos.
+
 Configure no serviço **Talume**, em **Variables** do Railway:
 
 | Variável | Valor |

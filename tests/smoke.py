@@ -41,6 +41,14 @@ def message(to):
  messages=json.load(opener.open('http://127.0.0.1:8025/api/v1/messages'))['messages']
  item=next(x for x in messages if any(r['Address']==to for r in x['To']))
  return json.load(opener.open('http://127.0.0.1:8025/api/v1/message/'+item['ID']))['Text']
+def assert_code_email(to,code,title):
+ if '--local' not in sys.argv:return
+ sent=next(x['message'] for x in reversed(MAIL) if x['to']==to)
+ htmlpart=next(p for p in sent.walk() if p.get_content_type()=='text/html')
+ html=htmlpart.get_payload(decode=True).decode('utf-8')
+ assert code in html and title in html and '10 minutos' in html and 'Não compartilhe' in html
+ linked={p.get('Content-ID') for p in sent.walk() if p.get_content_type()=='image/png'}
+ assert linked=={'<talume-mark>','<talume-hero>'}
 def logo_png(red=25,green=180,invalid=False):
  import base64,struct,zlib
  def chunk(kind,data):return struct.pack('>I',len(data))+kind+data+struct.pack('>I',zlib.crc32(kind+data)&0xffffffff)
@@ -115,6 +123,7 @@ def run():
  newuser=Client();newuser.req('/api/auth/invitation?token='+token)
  reg=newuser.req('/api/auth/register','POST',{'name':'Cliente Teste','email':email_address,'password':'NovaSenha123!','invitationToken':token})
  code=re.search(r'\b([0-9]{6})\b',message(email_address)).group(1)
+ assert_code_email(email_address,code,'Confirme seu e-mail no Talume')
  newuser.req('/api/auth/verify','POST',{'challengeId':reg['challengeId'],'code':'WRONG','newPassword':'NovaSenha123!'},expected=400)
  payload={'challengeId':reg['challengeId'],'code':code,'newPassword':'NovaSenha123!'}
  newuser.req('/api/auth/verify','POST',payload)
@@ -133,12 +142,14 @@ def run():
   print('Waiting for the email issuance cooldown before password recovery…',flush=True);time.sleep(61)
  reset=newuser.req('/api/auth/forgot','POST',{'email':email_address})
  code=re.search(r'\b([0-9]{6})\b',message(email_address)).group(1)
+ assert_code_email(email_address,code,'Redefina sua senha no Talume')
  newuser.req('/api/auth/verify','POST',{'challengeId':reset['challengeId'],'code':code,'newPassword':'OutraSenha123!'})
  newuser.login(email_address,'OutraSenha123!')
  # An independent freelancer cannot see another freelancer's data.
  other=Client();othermail='freelancer-'+stamp+'@example.com'
  registered=other.req('/api/auth/register','POST',{'name':'Outro freelancer','email':othermail,'password':'OutraSenha123!','invitationToken':None})
  code=re.search(r'\b([0-9]{6})\b',message(othermail)).group(1)
+ assert_code_email(othermail,code,'Confirme seu e-mail no Talume')
  other.req('/api/auth/verify','POST',{'challengeId':registered['challengeId'],'code':code,'newPassword':'OutraSenha123!'})
  other.login(othermail,'OutraSenha123!');assert other.req('/api/projects')==[] and other.req('/api/clients')==[]
  other.req(url,expected=404)

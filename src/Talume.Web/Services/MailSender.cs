@@ -8,6 +8,8 @@ namespace Talume.Web.Services;
 public class MailSender(IConfiguration config, IWebHostEnvironment env, IHttpClientFactory clients, ILogger<MailSender> logger)
 {
     public Task SendAsync(string to, string subject, string body) => SendMessageAsync(to, subject, body, null);
+    public Task SendCodeAsync(string to, string name, string code, string purpose) =>
+        SendMessageAsync(to, VerificationEmail.Subject(purpose), VerificationEmail.Text(name, code, purpose), VerificationEmail.Html(name, code, purpose));
     public Task SendInvitationAsync(string to, string name, string url) =>
         SendMessageAsync(to, "Seu projeto tem um espaço no Talume", InvitationEmail.Text(name, url), InvitationEmail.Html(name, url));
     private async Task SendMessageAsync(string to, string subject, string body, string? html)

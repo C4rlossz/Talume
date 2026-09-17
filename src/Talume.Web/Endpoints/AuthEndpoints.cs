@@ -120,7 +120,7 @@ public static class AuthEndpoints
         var challenge = new EmailChallenge { UserId = user.Id, Purpose = purpose, InvitationId = invitationId, ExpiresAt = now.AddMinutes(10) };
         challenge.CodeHash = Hash(challenge.Id + ":" + code);
         db.EmailChallenges.Add(challenge); await db.SaveChangesAsync();
-        try { await mail.SendAsync(user.Email!, "Seu código Talume", $"Seu código é {code}. Ele vale por 10 minutos e pode ser usado uma única vez.\n\nSe não solicitou, ignore este e-mail."); }
+        try { await mail.SendCodeAsync(user.Email!, user.DisplayName, code, purpose); }
         catch (MailDeliveryException) { challenge.ExpiresAt = now; await db.SaveChangesAsync(); return Results.Json(new { error = "Não conseguimos enviar o e-mail. Confira o serviço de envio e solicite outro código." }, statusCode: 503); }
         return Results.Ok(new { challengeId = challenge.Id, message = "Confira seu e-mail." });
     }
