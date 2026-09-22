@@ -1,0 +1,9 @@
+; Registros publicos de autenticacao do Resend para talume.app.br.
+; Importar na zona talume.app.br da Cloudflare. Nao substitui os registros existentes.
+; CNAME de e-mail deve permanecer DNS only (sem proxy).
+$ORIGIN talume.app.br.
+$TTL 3600
+resend._domainkey IN TXT "p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC9iexdbAXh6eWLIaj7SOXIoc5j4D8y97sWJ7nFs22i8PDct0fxeQMNiJPisMtPVHq7z08A2ZEJ+tkyJ9loKRABJXw3n+/VE/zhPbNUfmcwDW2YCGGnYmjY3uiICq3AsZ8VIibaWt2iJpfRFlCTNU/gecUYsFn+HhQ8CikzFCq9bwIDAQAB"
+send IN MX 10 feedback-smtp.sa-east-1.amazonses.com.
+send IN TXT "v=spf1 include:amazonses.com ~all"
+rsend IN CNAME send.forge.rmta.net.

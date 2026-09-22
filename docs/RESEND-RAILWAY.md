@@ -2,16 +2,39 @@
 
 Atualização de 16/09/2026, desenvolvida por Carlos com apoio de ChatGPT/Codex.
 
-## Situação da publicação
+## Situação da publicação — 22/09/2026
 
-- [GitHub privado](https://github.com/C4rlossz/Talume): integração enviada à branch `main`.
-- [Railway](https://railway.com/project/0c4fb946-f4ed-4ef5-9028-77d9de9351df): PostgreSQL online, serviço Talume e volumes criados.
-- Aplicação **ainda offline**, sem primeiro deployment: o Railway relatou que o repositório não foi encontrado ou não está acessível. A causa exata na instalação GitHub precisa ser conferida pelo proprietário.
-- Domínio reservado: `talume-production.up.railway.app`. A reserva não comprova publicação nem funcionamento.
-- Chave Resend, remetente autorizado e lista de e-mails de desenvolvedores ainda precisam ser preenchidos.
-- O workflow [Validate Talume](https://github.com/C4rlossz/Talume/actions) compila e verifica o transporte, a suíte HTTP/SMTP e a imagem Docker; inclui também execução descartável com PostgreSQL e teste de persistência das chaves. Não testa entrega real do Resend.
+- Código versionado em [C4rlossz/Talume](https://github.com/C4rlossz/Talume), branch `main`.
+- Aplicação e PostgreSQL publicados no Railway. Domínio próprio: `https://talume.app.br`.
+- DNS delegado à Cloudflare. A validação do domínio no Railway inclui CNAME e TXT `_railway-verify`.
+- Integração Resend implementada para confirmação de clientes e desenvolvedores, recuperação de senha e convites.
+- A autenticação de `talume.app.br` no Resend ainda depende da publicação e verificação dos registros abaixo. Não confundir site online com envio de e-mail liberado.
+- O workflow [Validate Talume](https://github.com/C4rlossz/Talume/actions) compila e verifica o transporte, a suíte HTTP/SMTP e a imagem Docker. Não comprova entrega real de e-mails.
 
-Para liberar o deploy, abra GitHub → Settings → Applications → Installed GitHub Apps → Railway → Configure e conceda acesso especificamente a `Talume`. Se o Railway não estiver instalado, conecte sua conta GitHub pelo painel Railway e instale-o para esse repositório. No serviço Talume, confira a origem `C4rlossz/Talume`, branch `main`, e inicie o primeiro deploy. Não é necessário tornar o repositório público.
+### Finalizar o domínio de e-mail
+
+Importe [talume-resend-dns.txt](talume-resend-dns.txt) em Cloudflare → DNS → Records → Import.
+Desmarque a opção de aplicar proxy aos registros importados, se aparecer.
+O arquivo acrescenta DKIM (TXT), SPF (TXT), MX de envio e CNAME de autenticação; mantenha os registros existentes do site e a política DMARC.
+O SPF `v=spf1 -all` na raiz não substitui o SPF do subdomínio `send`; não adicione um segundo SPF na raiz.
+Não há criação de caixa de entrada: o MX em `send` é usado pelo provedor para o envio.
+
+Depois da importação, execute a verificação em Resend → Domains → talume.app.br.
+Somente após o status **Verified**, configure no serviço Talume:
+
+- `Mail__From=Talume <nao-responda@talume.app.br>`
+- `Mail__Provider=Resend`
+- `App__BaseUrl=https://talume.app.br`
+
+A chave de envio existente permanece apenas no Railway. Nunca a coloque no arquivo DNS.
+Reaplique as variáveis com deploy e valide entrega real para endereços autorizados antes de considerar o fluxo concluído.
+
+### Autoria e LinkedIn
+
+A janela “Sobre o Talume” descreve as tecnologias efetivamente usadas.
+Defina `App__AuthorLinkedIn` no Railway com a URL HTTPS completa do perfil de Carlos Eduardo, no formato `https://www.linkedin.com/in/...`.
+Somente URLs de perfil em `linkedin.com` ou `www.linkedin.com` são aceitas.
+Sem um perfil válido, o nome continua visível como texto, sem link vazio ou endereço inventado.
 
 As configurações Dockerfile, porta, healthcheck e volume foram aplicadas diretamente ao serviço. O Railway informou que `railway.toml` é legado; este piloto não depende de editar esse arquivo para configurar o serviço.
 
@@ -52,7 +75,7 @@ Rejeições da API, indisponibilidade da rede e timeout de 20 segundos são trat
 
 ## Infraestrutura
 
-- Origem: repositório privado `C4rlossz/Talume`, branch `main`, Dockerfile.
+- Origem: repositório `C4rlossz/Talume`, branch `main`, Dockerfile.
 - Ambiente: `Production`, `Demo__Seed=false`, `Database__Provider=Postgres`.
 - Conexão Npgsql: `Host=${{Postgres.PGHOST}};Port=${{Postgres.PGPORT}};Database=${{Postgres.PGDATABASE}};Username=${{Postgres.PGUSER}};Password=${{Postgres.PGPASSWORD}};SSL Mode=Require`.
 - PostgreSQL acessível somente pela rede privada, com volume persistente. O template disponível no Railway usa PostgreSQL 18; o Compose local permanece na versão 17.

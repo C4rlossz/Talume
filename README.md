@@ -148,6 +148,10 @@ O desenvolvedor também pode criar sua própria conta pela tela inicial. Essa co
 | Banco principal | PostgreSQL 17 |
 | Acesso a dados | Entity Framework Core + Npgsql |
 | Ambiente local | Docker Compose + Mailpit |
+| E-mails em produção | Resend via API HTTPS; exige domínio verificado |
+| Hospedagem | Railway para aplicação e PostgreSQL |
+| DNS do domínio | Cloudflare |
+| Versionamento e validação | Git, GitHub e GitHub Actions |
 | Documentos | Página Razor autorizada, com impressão / salvar PDF |
 | Testes | Python 3, chamadas HTTP reais e fixture SMTP |
 

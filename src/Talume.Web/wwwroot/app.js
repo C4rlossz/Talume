@@ -33,7 +33,25 @@ function showAbout(){
         dialog.className='about-dialog';
         dialog.setAttribute('aria-labelledby','about-talume-title');
         dialog.setAttribute('aria-describedby','about-talume-description');
-        dialog.innerHTML=`<div class="modal-head"><h2 id="about-talume-title">Sobre o Talume</h2><form method="dialog"><button type="submit" class="close" aria-label="Fechar informações" autofocus>×</button></form></div><div class="about-content"><span class="eyebrow muted">PROJETO EDUCACIONAL</span><p id="about-talume-description">Site criado por <strong>Carlos Eduardo</strong> como projeto educacional em <strong>C# com .NET</strong>.</p><p class="muted">Um espaço para organizar clientes, projetos e entregas.</p></div>`;
+        const linkedIn=$('meta[name="talume-author-linkedin"]')?.content;
+        const author=linkedIn
+            ? `<a class="about-author" href="${esc(linkedIn)}" target="_blank" rel="noopener noreferrer" aria-label="Carlos Eduardo no LinkedIn (abre em nova aba)">Carlos Eduardo ${icon('link')}</a>`
+            : '<strong>Carlos Eduardo</strong>';
+        dialog.innerHTML=`<div class="modal-head"><h2 id="about-talume-title">Sobre o Talume</h2><form method="dialog"><button type="submit" class="close" aria-label="Fechar informações" autofocus>×</button></form></div>
+            <div class="about-content">
+                <span class="eyebrow muted">PROJETO EDUCACIONAL E DE PORTFÓLIO</span>
+                <p id="about-talume-description">Criado por ${author} para aplicar conhecimentos de desenvolvimento de software em uma ferramenta de gestão de clientes, projetos e entregas.</p>
+                <h3>Tecnologias e integrações</h3>
+                <dl class="about-stack">
+                    <div><dt>Aplicação</dt><dd>C#, .NET 10 e ASP.NET Core, com Razor Pages e Minimal APIs.</dd></div>
+                    <div><dt>Interface</dt><dd>HTML, CSS e JavaScript.</dd></div>
+                    <div><dt>Dados e autenticação</dt><dd>PostgreSQL, Entity Framework Core, Npgsql e ASP.NET Core Identity.</dd></div>
+                    <div><dt>E-mails</dt><dd>Integração com a API HTTPS do Resend para convites, códigos de confirmação e recuperação de senha.</dd></div>
+                    <div><dt>Infraestrutura</dt><dd>Docker, hospedagem da aplicação e do banco no Railway e DNS gerenciado pela Cloudflare.</dd></div>
+                    <div><dt>Desenvolvimento</dt><dd>Git e GitHub para versionamento, GitHub Actions para validação e Mailpit para testes locais de e-mail.</dd></div>
+                </dl>
+                <p class="about-credit muted">Desenvolvido por Carlos Eduardo, com apoio de IA (ChatGPT/Codex) na implementação e revisão.</p>
+            </div>`;
         document.body.append(dialog);
     }
     if(!dialog.open)dialog.showModal();

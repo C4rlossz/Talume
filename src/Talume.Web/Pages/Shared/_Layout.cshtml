@@ -1,3 +1,19 @@
 @inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    var authorLinkedIn = Configuration["App:AuthorLinkedIn"]?.Trim();
+    var validAuthorLinkedIn = Uri.TryCreate(authorLinkedIn, UriKind.Absolute, out var profile)
+        && profile.Scheme == Uri.UriSchemeHttps
+        && (profile.Host.Equals("www.linkedin.com", StringComparison.OrdinalIgnoreCase)
+            || profile.Host.Equals("linkedin.com", StringComparison.OrdinalIgnoreCase))
+        && string.IsNullOrEmpty(profile.UserInfo)
+        && profile.IsDefaultPort
+        && profile.AbsolutePath.StartsWith("/in/", StringComparison.OrdinalIgnoreCase)
+        && profile.AbsolutePath.Length > 4;
+}
 <!doctype html>
-<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken"><title>Talume · Seu trabalho em dia</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><script src="/theme.js" asp-append-version="true"></script><link rel="stylesheet" href="/app.css" asp-append-version="true"></head><body>@RenderBody()<script src="/app.js" asp-append-version="true" defer></script></body></html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken">@if (validAuthorLinkedIn)
+{
+    <meta name="talume-author-linkedin" content="@authorLinkedIn">
+}
+<title>Talume · Seu trabalho em dia</title><link rel="icon" href="/favicon.svg" type="image/svg+xml"><script src="/theme.js" asp-append-version="true"></script><link rel="stylesheet" href="/app.css" asp-append-version="true"></head><body>@RenderBody()<script src="/app.js" asp-append-version="true" defer></script></body></html>
