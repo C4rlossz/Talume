@@ -50,7 +50,7 @@ function showAbout(){
                     <div><dt>Infraestrutura</dt><dd>Docker, hospedagem da aplicação e do banco no Railway e DNS gerenciado pela Cloudflare.</dd></div>
                     <div><dt>Desenvolvimento</dt><dd>Git e GitHub para versionamento, GitHub Actions para validação e Mailpit para testes locais de e-mail.</dd></div>
                 </dl>
-                <p class="about-credit muted">Desenvolvido por Carlos Eduardo, com apoio de IA (ChatGPT/Codex) na implementação e revisão.</p>
+                <p class="about-credit muted">Desenvolvido por Carlos Eduardo.</p>
             </div>`;
         document.body.append(dialog);
     }
