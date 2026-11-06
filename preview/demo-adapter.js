@@ -5,10 +5,11 @@ const db=JSON.parse(JSON.stringify(window.TALUME_SEED));let kind='Freelancer';db
 db.business={businessName:'Origins',responsibleName:'Carlos',taxId:'',email:'',phone:'',website:'',address:''};
 const uid=()=>crypto.randomUUID?crypto.randomUUID():Math.random().toString(36).slice(2);
 const viewer=db.clients.find(c=>c.userId),now=()=>new Date().toISOString();
-const allowed=id=>kind==='Freelancer'||db.details.some(p=>p.id===id&&p.clientName===viewer.name);
+for(const project of db.details)project.clientId=db.clients.find(c=>c.name===project.clientName)?.id;
+const allowed=id=>kind==='Freelancer'||db.clients.includes(viewer)&&db.details.some(p=>p.id===id&&p.clientId===viewer.id);
 function projects(){return db.details.filter(p=>allowed(p.id)).map(p=>({id:p.id,title:p.title,stage:p.stage,dueDate:p.dueDate,value:p.value,clientName:p.clientName,clientPending:p.clientPending,taskCount:kind==='Freelancer'?p.tasks.length:null,doneCount:kind==='Freelancer'?p.tasks.filter(t=>t.done).length:null,paid:p.installments.filter(i=>i.paidAt).reduce((s,i)=>s+i.amount,0)}));}
 function projected(p){return {...p,tasks:kind==='Freelancer'?p.tasks:[],updates:p.updates.filter(u=>kind==='Freelancer'||!u.internal),phone:kind==='Freelancer'?p.phone:null};}
-function addProject(b,quoteId=null){const c=db.clients.find(c=>c.id===b.clientId);const p={id:uid(),title:b.title,clientName:c.name,phone:c.phone,stage:'Briefing',dueDate:b.dueDate,value:b.value,quoteId,clientPending:'',tasks:[],updates:[{id:uid(),text:'Projeto iniciado.',internal:false,createdAt:now()}],deliveries:[],installments:[]};db.details.push(p);return {id:p.id};}
+function addProject(b,quoteId=null){const c=db.clients.find(c=>c.id===b.clientId);const p={id:uid(),title:b.title,clientId:c.id,clientName:c.name,phone:c.phone,stage:'Briefing',dueDate:b.dueDate,value:b.value,quoteId,clientPending:'',tasks:[],updates:[{id:uid(),text:'Projeto iniciado.',internal:false,createdAt:now()}],deliveries:[],installments:[]};db.details.push(p);return {id:p.id};}
 async function request(path,method='GET',body={}){
 const parts=path.split('/').filter(Boolean);const [resource,id,child,itemId,action]=parts;
 if(method==='GET'){
@@ -25,6 +26,12 @@ if(kind!=='Freelancer')throw Error('O portal do cliente permite apenas consultar
 if(resource==='business-logo'&&method==='PUT'){db.logo=body.dataUrl||'';return {dataUrl:db.logo};}
 if(resource==='business-profile'&&method==='PUT'){Object.assign(db.business,body);return {...db.business};}
 if(resource==='clients'){
+ if(method==='DELETE'){
+  db.details=db.details.filter(p=>p.clientId!==id);
+  db.quotes=db.quotes.filter(q=>q.clientId!==id);
+  db.clients=db.clients.filter(c=>c.id!==id);
+  return {};
+ }
  if(child==='invite')throw Error('Na aplicação completa, este botão envia um convite. Abra o projeto com Docker para testar o e-mail.');
  if(method==='PUT'){Object.assign(db.clients.find(c=>c.id===id),body);return {};}
  if(db.clients.some(c=>c.email===body.email))throw Error('Você já cadastrou este e-mail.');
@@ -33,11 +40,12 @@ if(resource==='clients'){
 if(resource==='services'){if(method==='PUT'){Object.assign(db.services.find(s=>s.id===id),body);return {};}const s={...body,id:uid()};db.services.push(s);return s;}
 if(resource==='quotes'){
  if(child==='share'){db.quotes.find(q=>q.id===id).status='Enviado';return {};}
- if(child==='convert'){const q=db.quotes.find(q=>q.id===id);const existing=db.details.find(p=>p.quoteId===id);if(existing)return {id:existing.id};q.status='Aprovado';return addProject({clientId:q.clientId,title:q.title,value:q.total,dueDate:body.dueDate},q.id);}
+ if(child==='convert'){const q=db.quotes.find(q=>q.id===id);const existing=db.details.find(p=>p.quoteId===id);if(existing)return {id:existing.id};if(q.status==='Aprovado')throw Error('Este orçamento já foi aprovado e o projeto original foi excluído.');q.status='Aprovado';return addProject({clientId:q.clientId,title:q.title,value:q.total,dueDate:body.dueDate},q.id);}
  const total=body.lines.reduce((s,l)=>s+l.quantity*l.unitPrice,0)-body.discount;if(total<0)throw Error('Desconto maior que o subtotal.');
  const q={...body,logoDataUrl:body.logoDataUrl??db.logo,total,createdAt:now(),id:uid(),status:'Rascunho',clientName:db.clients.find(c=>c.id===body.clientId).name};db.quotes.push(q);return q;
 }
 if(resource==='projects'){
+ if(method==='DELETE'){db.details=db.details.filter(p=>p.id!==id);return {};}
  if(!id)return addProject(body);
  const p=db.details.find(p=>p.id===id);
  if(!child){Object.assign(p,body);p.updates.unshift({id:uid(),text:`Projeto atualizado: ${body.stage}. Entrega prevista: ${body.dueDate}.`,internal:false,createdAt:now()});return {};}
