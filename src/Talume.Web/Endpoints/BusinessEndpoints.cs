@@ -31,9 +31,16 @@ public static class BusinessEndpoints
     static bool Text(string? s, int max = 160) => !string.IsNullOrWhiteSpace(s) && s.Length <= max;
     static bool Money(decimal value) => value >= 0 && value <= 99999999 && decimal.Round(value, 2) == value;
     static bool Date(DateOnly value) => value.Year is >= 2000 and <= 2200;
+    static bool ClientValid(ClientInput input, string email) =>
+        Text(input.Name) && email.Length <= 254 &&
+        System.Net.Mail.MailAddress.TryCreate(email, out var address) && address.Address == email &&
+        input.Notes is { Length: <= 5000 } && input.Phone is { Length: <= 30 } && input.Company is { Length: <= 160 };
+    static object ClientData(Client client) => new {
+        client.Id, client.Name, client.Company, client.Email, client.Phone, client.Notes, portalActive = client.UserId != null
+    };
     public static void MapBusinessEndpoints(this WebApplication app)
     {
-        var api = app.MapGroup("/api").RequireAuthorization();
+        var api = app.MapGroup("/api").RequireAuthorization().RequireRateLimiting("workspace");
         api.MapGet("/me", async (ClaimsPrincipal principal, UserManager<AppUser> users, IConfiguration config, IWebHostEnvironment env) => {
             var u = await users.GetUserAsync(principal);
             return Results.Ok(new { u!.DisplayName, u.Email, u.Kind, demo = env.IsDevelopment() && config.GetValue("Demo:Seed", false) });
@@ -70,26 +77,27 @@ public static class BusinessEndpoints
             profile.Email = email; profile.Phone = phone; profile.Website = website; profile.Address = address;
             await db.SaveChangesAsync(); return Results.Ok(profile);
         }).RequireAuthorization("Freelancer");
-        api.MapGet("/clients", async (AppDbContext db, ClaimsPrincipal u) => await db.Clients.Where(x => x.OwnerId == u.UserId()).OrderBy(x => x.Name).ToListAsync()).RequireAuthorization("Freelancer");
+        api.MapGet("/clients", async (AppDbContext db, ClaimsPrincipal u) =>
+            (await db.Clients.Where(x => x.OwnerId == u.UserId()).OrderBy(x => x.Name).ToListAsync()).Select(ClientData)).RequireAuthorization("Freelancer");
         api.MapPost("/clients", async (ClientInput i, AppDbContext db, ClaimsPrincipal u) => {
-            var email = i.Email.Trim().ToLowerInvariant();
-            if (!Text(i.Name) || !System.Net.Mail.MailAddress.TryCreate(email, out _) || email.Length > 254 || i.Notes.Length > 5000 || i.Phone.Length > 30 || i.Company.Length > 160) return Bad("Confira nome, e-mail e os limites dos campos.");
+            var email = (i.Email ?? "").Trim().ToLowerInvariant();
+            if (!ClientValid(i, email)) return Bad("Confira nome, e-mail e os limites dos campos.");
             if (await db.Clients.AnyAsync(x => x.OwnerId == u.UserId() && x.Email == email)) return Bad("Você já cadastrou um cliente com este e-mail.");
             var c = new Client { OwnerId = u.UserId(), Name = i.Name.Trim(), Company = i.Company.Trim(), Email = email, Phone = i.Phone.Trim(), Notes = i.Notes };
-            db.Clients.Add(c); await db.SaveChangesAsync(); return Results.Ok(c);
+            db.Clients.Add(c); await db.SaveChangesAsync(); return Results.Ok(ClientData(c));
         }).RequireAuthorization("Freelancer");
         api.MapPut("/clients/{id:guid}", async (Guid id, ClientInput i, AppDbContext db, ClaimsPrincipal u) => {
             var c = await db.Clients.SingleOrDefaultAsync(x => x.Id == id && x.OwnerId == u.UserId());
             if (c == null) return Results.NotFound();
-            var email = i.Email.Trim().ToLowerInvariant();
-            if (!Text(i.Name) || !System.Net.Mail.MailAddress.TryCreate(email, out _) || email.Length > 254 || i.Notes.Length > 5000 || i.Phone.Length > 30 || i.Company.Length > 160) return Bad("Confira os campos do cliente.");
+            var email = (i.Email ?? "").Trim().ToLowerInvariant();
+            if (!ClientValid(i, email)) return Bad("Confira os campos do cliente.");
             if (c.UserId != null && c.Email != email) return Bad("O e-mail de uma conta vinculada não pode ser alterado por aqui.");
             if (await db.Clients.AnyAsync(x => x.OwnerId == u.UserId() && x.Email == email && x.Id != id)) return Bad("Outro cliente já usa este e-mail.");
             if (c.Email != email) {
                 foreach (var inv in await db.Invitations.Where(x => x.ClientId == id && x.UsedAt == null).ToListAsync()) inv.ExpiresAt = DateTime.UtcNow;
             }
             c.Name = i.Name.Trim(); c.Company = i.Company.Trim(); c.Email = email; c.Phone = i.Phone.Trim(); c.Notes = i.Notes;
-            await db.SaveChangesAsync(); return Results.Ok(c);
+            await db.SaveChangesAsync(); return Results.Ok(ClientData(c));
         }).RequireAuthorization("Freelancer");
         api.MapDelete("/clients/{id:guid}", async (Guid id, AppDbContext db, ClaimsPrincipal u) => {
             var ownerId = u.UserId();
@@ -121,21 +129,21 @@ public static class BusinessEndpoints
             var token = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
             var invitation = new Invitation { ClientId = id, TokenHash = AuthEndpoints.Hash(token), ExpiresAt = DateTime.UtcNow.AddDays(7) };
             db.Invitations.Add(invitation); await db.SaveChangesAsync();
-            var url = (config["App:BaseUrl"] ?? "http://localhost:8080").TrimEnd('/') + "/Account?invite=" + token;
+            var url = (config["App:BaseUrl"] ?? "http://localhost:8080").TrimEnd('/') + "/Account#invite=" + token;
             try { await mail.SendInvitationAsync(c.Email, c.Name, url); }
             catch (MailDeliveryException) { invitation.ExpiresAt = DateTime.UtcNow; await db.SaveChangesAsync(); return Results.Json(new { error = "Falha no envio. Confira o serviço de e-mail e tente novamente." }, statusCode: 503); }
             return Results.Ok(new { message = "Convite enviado por e-mail." });
         }).RequireAuthorization("Freelancer");
         api.MapGet("/services", async (AppDbContext db, ClaimsPrincipal u) => await db.CatalogServices.Where(x => x.OwnerId == u.UserId()).OrderBy(x => x.Name).ToListAsync()).RequireAuthorization("Freelancer");
         api.MapPost("/services", async (ServiceInput i, AppDbContext db, ClaimsPrincipal u) => {
-            if (!Text(i.Name) || i.Description.Length > 3000 || !Money(i.BasePrice) || i.EstimatedDays is < 1 or > 365) return Bad("Confira nome, preço e prazo (1 a 365 dias).");
+            if (!Text(i.Name) || i.Description is not { Length: <= 3000 } || !Money(i.BasePrice) || i.EstimatedDays is < 1 or > 365) return Bad("Confira nome, preço e prazo (1 a 365 dias).");
             var service = new CatalogService { OwnerId = u.UserId(), Name = i.Name.Trim(), Description = i.Description, BasePrice = i.BasePrice, EstimatedDays = i.EstimatedDays };
             db.CatalogServices.Add(service); await db.SaveChangesAsync(); return Results.Ok(service);
         }).RequireAuthorization("Freelancer");
         api.MapPut("/services/{id:guid}", async (Guid id, ServiceInput i, AppDbContext db, ClaimsPrincipal u) => {
             var s = await db.CatalogServices.SingleOrDefaultAsync(x => x.Id == id && x.OwnerId == u.UserId());
             if (s == null) return Results.NotFound();
-            if (!Text(i.Name) || i.Description.Length > 3000 || !Money(i.BasePrice) || i.EstimatedDays is < 1 or > 365) return Bad("Confira nome, preço e prazo.");
+            if (!Text(i.Name) || i.Description is not { Length: <= 3000 } || !Money(i.BasePrice) || i.EstimatedDays is < 1 or > 365) return Bad("Confira nome, preço e prazo.");
             s.Name = i.Name.Trim(); s.Description = i.Description; s.BasePrice = i.BasePrice; s.EstimatedDays = i.EstimatedDays;
             await db.SaveChangesAsync(); return Results.Ok(s);
         }).RequireAuthorization("Freelancer");
@@ -144,7 +152,7 @@ public static class BusinessEndpoints
             return quotes.Select(q => new { q.Id, q.ClientId, clientName = q.Client.Name, q.Title, q.Status, q.ValidUntil, q.Discount, q.Terms, q.Total, q.Lines });
         });
         api.MapPost("/quotes", async (QuoteInput i, AppDbContext db, ClaimsPrincipal u) => {
-            if (!Text(i.Title) || !Date(i.ValidUntil) || i.Terms.Length > 5000 || i.Lines == null || i.Lines.Count is < 1 or > 30 || i.Lines.Any(l => !Text(l.Description, 300) || l.Quantity is < 1 or > 1000 || !Money(l.UnitPrice))) return Bad("Preencha o título e adicione de 1 a 30 itens válidos.");
+            if (!Text(i.Title) || !Date(i.ValidUntil) || i.Terms is not { Length: <= 5000 } || i.Lines == null || i.Lines.Count is < 1 or > 30 || i.Lines.Any(l => l == null || !Text(l.Description, 300) || l.Quantity is < 1 or > 1000 || !Money(l.UnitPrice))) return Bad("Preencha o título e adicione de 1 a 30 itens válidos.");
             if (!LogoImage.Valid(i.LogoDataUrl)) return Bad("Confira a logo: PNG de até 512 KB e 2000 × 2000 pixels.");
             var subtotal = i.Lines.Sum(x => x.Quantity * x.UnitPrice);
             if (!Money(i.Discount) || i.Discount > subtotal || subtotal > 99999999) return Bad("O desconto não pode superar o subtotal. Limite total: R$ 99.999.999.");
@@ -198,7 +206,7 @@ public static class BusinessEndpoints
                 deliveries = p.Deliveries.OrderByDescending(x => x.CreatedAt), installments = p.Installments.OrderBy(x => x.DueDate) });
         });
         api.MapPut("/projects/{id:guid}", async (Guid id, ProjectEdit i, AppDbContext db, ClaimsPrincipal u) => {
-            if (!Access.Stages.Contains(i.Stage) || !Date(i.DueDate) || i.ClientPending.Length > 2000) return Bad("Confira a etapa, data e pendência.");
+            if (!Access.Stages.Contains(i.Stage) || !Date(i.DueDate) || i.ClientPending is not { Length: <= 2000 }) return Bad("Confira a etapa, data e pendência.");
             var p = await db.Projects.SingleOrDefaultAsync(x => x.Id == id && x.OwnerId == u.UserId()); if (p == null) return Results.NotFound();
             var changes = new List<string>();
             if (p.Stage != i.Stage) changes.Add($"Etapa alterada: {p.Stage} → {i.Stage}.");
@@ -232,7 +240,7 @@ public static class BusinessEndpoints
             db.ProjectUpdates.Add(new ProjectUpdate { ProjectId = id, Text = i.Text, Internal = i.Internal }); await db.SaveChangesAsync(); return Results.Ok();
         });
         manage.MapPost("/deliveries", async (Guid id, DeliveryInput i, AppDbContext db) => {
-            if (!Text(i.Title) || i.Url.Length > 2000 || !Access.HttpsUrl(i.Url)) return Bad("Informe título e link HTTPS válido.");
+            if (!Text(i.Title) || i.Url is not { Length: <= 2000 } || !Access.HttpsUrl(i.Url)) return Bad("Informe título e link HTTPS válido.");
             db.Deliveries.Add(new Delivery { ProjectId = id, Title = i.Title, Url = i.Url });
             db.ProjectUpdates.Add(new ProjectUpdate { ProjectId = id, Text = $"Entrega disponível: {i.Title}." }); await db.SaveChangesAsync(); return Results.Ok();
         });

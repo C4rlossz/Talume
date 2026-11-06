@@ -1,12 +1,14 @@
 """Integration tests against Talume. Python 3, standard library only.
 python tests/smoke.py                  # Docker app on localhost:8081 + Mailpit
 python tests/smoke.py --local DOTNET   # Starts an isolated SQLite test app and SMTP fixture
+Set TALUME_TEST_POSTGRES to use an already seeded, disposable PostgreSQL database with RLS.
 """
 import os,sys,json,re,time,subprocess,tempfile,threading,socketserver,email,urllib.request,urllib.error,http.cookiejar
 from pathlib import Path
 from html import unescape as decode_html
 ROOT=Path(__file__).resolve().parents[1]
 BASE=os.environ.get('TALUME_TEST_URL','http://127.0.0.1:8081')
+POSTGRES=os.environ.get('TALUME_TEST_POSTGRES')
 MAIL=[]
 class SMTP(socketserver.StreamRequestHandler):
  def handle(self):
@@ -58,6 +60,9 @@ def run():
  c=Client();c.req('/api/projects',expected=401)
  c.req('/api/auth/login','POST',{'email':'freelancer@talume.local','password':'TalumeDemo2026!'},expected=400,csrf=False)
  c.login('freelancer@talume.local');projects=c.req('/api/projects');assert len(projects)>=3
+ assert 'LGPD' in c.req('/Privacy')
+ c.req('/api/clients','PATCH',{},expected=405)
+ assert all('ownerId' not in item and 'userId' not in item for item in c.req('/api/clients'))
  customer=Client();customer.login('cliente@talume.local');cp=customer.req('/api/projects');assert len(cp)==1
  customer.req('/api/clients',expected=403)
  logo=logo_png();alternate=logo_png(200,30)
@@ -68,6 +73,7 @@ def run():
  c.req('/api/business-logo','PUT',{'dataUrl':'data:image/png;base64,AAAA'},expected=400)
  c.req('/api/business-logo','PUT',{'dataUrl':logo_png(invalid=True)},expected=400)
  c.req('/api/business-logo','PUT',{'dataUrl':'data:image/png;base64,'+'A'*700000},expected=400)
+ c.req('/api/business-logo','PUT',{'dataUrl':'A'*(1024*1024)},expected=413)
  c.req('/api/business-logo','PUT',{'dataUrl':logo})
  assert c.req('/api/business-logo')['dataUrl']==logo
  profile=c.req('/api/business-profile');assert profile['businessName']=='Origins'
@@ -120,7 +126,8 @@ def run():
   linked={p.get('Content-ID') for p in sent.walk() if p.get_content_type()=='image/png'}
   assert linked=={'<talume-mark>','<talume-hero>'}
  invitation=message(email_address);token=re.search(r'invite=([A-F0-9]+)',invitation).group(1)
- newuser=Client();newuser.req('/api/auth/invitation?token='+token)
+ assert '/Account#invite=' in invitation
+ newuser=Client();newuser.req('/api/auth/invitation','POST',{'token':token})
  reg=newuser.req('/api/auth/register','POST',{'name':'Cliente Teste','email':email_address,'password':'NovaSenha123!','invitationToken':token})
  code=re.search(r'\b([0-9]{6})\b',message(email_address)).group(1)
  assert_code_email(email_address,code,'Confirme seu e-mail no Talume')
@@ -135,7 +142,7 @@ def run():
  newuser.req('/api/projects/'+cp[0]['id'],expected=404)
  newuser.req('/api/auth/logout','POST',{});newuser.refresh('/Account')
  # Reset happens after the issuance cooldown; adjust only fixture clock in SQLite, not application rules.
- if '--local' in sys.argv:
+ if '--local' in sys.argv and not POSTGRES:
   import sqlite3
   conn=sqlite3.connect(DBPATH);conn.execute('UPDATE EmailChallenges SET ExpiresAt = datetime(ExpiresAt, "-2 minutes")');conn.commit();conn.close()
  else:
@@ -207,6 +214,8 @@ if __name__=='__main__':
    sdk=sys.argv[sys.argv.index('--local')+1];tmp=tempfile.mkdtemp(prefix='talume-smoke-');DBPATH=tmp+'/test.db'
    server=socketserver.ThreadingTCPServer(('127.0.0.1',0),SMTP);threading.Thread(target=server.serve_forever,daemon=True).start()
    env={**os.environ,'ASPNETCORE_ENVIRONMENT':'Development','ASPNETCORE_URLS':BASE,'Database__Provider':'Sqlite','Database__Initialize':'true','Demo__Seed':'true','ConnectionStrings__Default':'Data Source='+DBPATH,'DataProtection__Path':tmp+'/keys','Mail__Host':'127.0.0.1','Mail__Port':str(server.server_address[1]),'App__BaseUrl':BASE}
+   if POSTGRES:
+    env.update({'Database__Provider':'Postgres','Database__Initialize':'false','Database__TenantPolicies':'true','Demo__Seed':'false','ConnectionStrings__Default':POSTGRES})
    log=open(tmp+'/server.log','w');process=subprocess.Popen([sdk,'run','--no-build','--project',str(ROOT/'src/Talume.Web')],env=env,stdout=log,stderr=log)
    opener=urllib.request.build_opener(urllib.request.ProxyHandler({}))
    for _ in range(60):
