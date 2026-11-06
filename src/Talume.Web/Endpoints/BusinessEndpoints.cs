@@ -2,7 +2,9 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Data;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Talume.Web.Data;
 using Talume.Web.Models;
 using Talume.Web.Services;
@@ -25,6 +27,7 @@ public static class BusinessEndpoints
     public record DeliveryInput(string Title, string Url);
     public record PaymentInput(string Label, decimal Amount, DateOnly DueDate);
     static IResult Bad(string message) => Results.BadRequest(new { error = message });
+    static IResult Conflict(string message) => Results.Conflict(new { error = message });
     static bool Text(string? s, int max = 160) => !string.IsNullOrWhiteSpace(s) && s.Length <= max;
     static bool Money(decimal value) => value >= 0 && value <= 99999999 && decimal.Round(value, 2) == value;
     static bool Date(DateOnly value) => value.Year is >= 2000 and <= 2200;
@@ -88,6 +91,26 @@ public static class BusinessEndpoints
             c.Name = i.Name.Trim(); c.Company = i.Company.Trim(); c.Email = email; c.Phone = i.Phone.Trim(); c.Notes = i.Notes;
             await db.SaveChangesAsync(); return Results.Ok(c);
         }).RequireAuthorization("Freelancer");
+        api.MapDelete("/clients/{id:guid}", async (Guid id, AppDbContext db, ClaimsPrincipal u) => {
+            var ownerId = u.UserId();
+            var client = await db.Clients.SingleOrDefaultAsync(x => x.Id == id && x.OwnerId == ownerId);
+            if (client == null) return Results.NotFound();
+
+            var projects = await db.Projects.Where(x => x.ClientId == id && x.OwnerId == ownerId).ToListAsync();
+            var quotes = await db.Quotes.Where(x => x.ClientId == id && x.OwnerId == ownerId).ToListAsync();
+            db.Projects.RemoveRange(projects);
+            db.Quotes.RemoveRange(quotes);
+            db.Clients.Remove(client);
+            try {
+                // SaveChanges orders the deletes and commits them together. The database removes dependent records.
+                await db.SaveChangesAsync();
+            } catch (DbUpdateException e) when (e is DbUpdateConcurrencyException ||
+                e.InnerException is PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation } or
+                    SqliteException { SqliteExtendedErrorCode: 787 }) {
+                return Conflict("Os registros do cliente mudaram durante a exclusão. Atualize a página e tente novamente.");
+            }
+            return Results.NoContent();
+        }).RequireAuthorization("Freelancer");
         api.MapPost("/clients/{id:guid}/invite", async (Guid id, AppDbContext db, ClaimsPrincipal u, MailSender mail, IConfiguration config) => {
             var c = await db.Clients.SingleOrDefaultAsync(x => x.Id == id && x.OwnerId == u.UserId());
             if (c == null) return Results.NotFound();
@@ -146,6 +169,7 @@ public static class BusinessEndpoints
             if (q == null) return Results.NotFound();
             var existing = await db.Projects.SingleOrDefaultAsync(x => x.QuoteId == id);
             if (existing != null) return Results.Ok(new { existing.Id });
+            if (q.Status == "Aprovado") return Conflict("Este orçamento já foi aprovado e o projeto original foi excluído.");
             var p = new Project { OwnerId = u.UserId(), ClientId = q.ClientId, QuoteId = q.Id, Title = q.Title, Value = q.Total, DueDate = input.DueDate };
             p.Updates.Add(new ProjectUpdate { Text = "Projeto iniciado após aprovação do orçamento." });
             db.Projects.Add(p); q.Status = "Aprovado";
@@ -183,6 +207,11 @@ public static class BusinessEndpoints
             p.Stage = i.Stage; p.DueDate = i.DueDate; p.ClientPending = i.ClientPending;
             if (changes.Count > 0) db.ProjectUpdates.Add(new ProjectUpdate { ProjectId = id, Text = string.Join(" ", changes) });
             await db.SaveChangesAsync(); return Results.Ok();
+        }).RequireAuthorization("Freelancer");
+        api.MapDelete("/projects/{id:guid}", async (Guid id, AppDbContext db, ClaimsPrincipal u) => {
+            var ownerId = u.UserId();
+            var deleted = await db.Projects.Where(x => x.Id == id && x.OwnerId == ownerId).ExecuteDeleteAsync();
+            return deleted == 0 ? Results.NotFound() : Results.NoContent();
         }).RequireAuthorization("Freelancer");
         var manage = api.MapGroup("/projects/{id:guid}").RequireAuthorization("Freelancer");
         manage.AddEndpointFilter(async (context, next) => {

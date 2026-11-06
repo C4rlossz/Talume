@@ -170,6 +170,36 @@ def run():
  seed_projects=[p for p in c.req('/api/projects') if p['id'] in {x['id'] for x in projects}]
  dump={'me':c.req('/api/me'),'projects':seed_projects,'details':[c.req('/api/projects/'+p['id']) for p in seed_projects],'clients':[x for x in c.req('/api/clients') if x['id']!=new['id']],'services':[s for s in c.req('/api/services') if s['id']!=service['id']],'quotes':[x for x in c.req('/api/quotes') if x['id'] not in {q['id'],custom['id'],no_logo['id']}]}
  if os.environ.get('TALUME_PREVIEW_DATA'):Path(os.environ['TALUME_PREVIEW_DATA']).write_text(json.dumps(dump,ensure_ascii=False))
+
+ # Destructive actions require the owner and a valid CSRF token.
+ client_url='/api/clients/'+new['id']
+ for target in (url,client_url):
+  newuser.req(target,'DELETE',expected=403)
+  other.req(target,'DELETE',expected=404)
+  c.req(target,'DELETE',expected=400,csrf=False)
+ c.req(url,'DELETE',expected=204)
+ c.req(url,'DELETE',expected=404)
+ c.req(url,expected=404)
+ newuser.req(url,expected=404)
+ assert any(x['id']==new['id'] for x in c.req('/api/clients'))
+ assert any(x['id']==q['id'] and x['status']=='Aprovado' for x in c.req('/api/quotes'))
+ newuser.req('/Document/'+q['id'])
+ c.req('/api/quotes/'+q['id']+'/convert','POST',{'dueDate':'2026-12-15'},expected=409)
+
+ linked=c.req('/api/quotes/'+custom['id']+'/convert','POST',{'dueDate':'2026-12-15'})
+ linked_url='/api/projects/'+linked['id']
+ c.req(linked_url+'/installments','POST',{'label':'Parcela','amount':10,'dueDate':'2026-12-15'})
+ c.req('/api/quotes/'+no_logo['id']+'/share','POST',{})
+ assert newuser.req(linked_url)['installments']
+ c.req(client_url,'DELETE',expected=204)
+ c.req(client_url,'DELETE',expected=404)
+ assert all(x['id']!=new['id'] for x in c.req('/api/clients'))
+ assert all(x['clientId']!=new['id'] for x in c.req('/api/quotes'))
+ c.req(linked_url,expected=404)
+ assert newuser.req('/api/projects')==[] and newuser.req('/api/quotes')==[]
+ newuser.req('/Document/'+no_logo['id'],expected=404)
+ assert {p['id'] for p in c.req('/api/projects')}=={p['id'] for p in projects}
+ print('PASS: owner-only project and client deletion, linked data removal, portal revocation and approved quote preservation.',flush=True)
 if __name__=='__main__':
  process=None;server=None
  try:
