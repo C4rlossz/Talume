@@ -1,5 +1,6 @@
 """Exercise the built image against disposable PostgreSQL, without external email."""
 import json, os, secrets, subprocess, time, urllib.request
+from pathlib import Path
 
 def docker(*args, **kwargs):
     return subprocess.check_output(['docker', *args], text=True, **kwargs).strip()
@@ -42,7 +43,19 @@ try:
     with opener.open('http://127.0.0.1:8082/api/auth/config') as r:
         assert json.load(r)['demo'] is False, 'Production must disable demo mode'
     with opener.open('http://127.0.0.1:8082/Account') as r:
-        assert r.status == 200 and 'csrf-token' in r.read().decode()
+        account_page = r.read().decode()
+        assert r.status == 200 and 'csrf-token' in account_page and '/Privacy' in account_page
+        assert r.headers['X-Frame-Options'] == 'DENY' and r.headers['Referrer-Policy'] == 'no-referrer'
+        assert r.headers['Strict-Transport-Security'] == 'max-age=31536000'
+        assert all(flag in r.headers['Set-Cookie'].lower() for flag in ('secure', 'httponly', 'samesite=strict'))
+        assert r.headers.get('Server') is None
+    with opener.open('http://127.0.0.1:8082/Privacy') as r:
+        assert r.status == 200 and 'LGPD' in r.read().decode()
+    root = Path(__file__).resolve().parents[1]
+    psql = ('exec', '-i', 'talume-ci-db', 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1')
+    docker(*psql, '-c', 'CREATE ROLE talume_app LOGIN NOINHERIT;')
+    for script in ('docs/upgrade-004-tenant-rls.sql', 'tests/tenant-rls.sql'):
+        docker(*psql, input=(root / script).read_text(encoding='utf-8'))
     status = docker('exec', 'talume-ci-app', 'cat', '/proc/1/status')
     uid = next(line.split()[1] for line in status.splitlines() if line.startswith('Uid:'))
     assert uid != '0', 'Application process must not run as root'

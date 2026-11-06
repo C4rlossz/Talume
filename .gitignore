@@ -13,7 +13,11 @@
 **/*.pfx
 **/*.p12
 **/*.pem
+**/*.crt
 **/*.key
+**/*.jks
+**/id_rsa
+**/id_ed25519
 **/*.dump
 **/*.backup
 backups/

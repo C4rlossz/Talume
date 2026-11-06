@@ -270,3 +270,9 @@ Cada desenvolvedor tem seu espaço isolado. Uma equipe de vários desenvolvedore
 - Pagamentos online, assinatura e emissão fiscal são integrações futuras, não funcionalidades desta versão.
 
 Veja `docs/GUIA-DE-ESTUDO.md` para entender o código e os próximos exercícios.
+
+## Licença e privacidade
+
+- [Licença MIT](LICENSE), copyright de Carlos Eduardo.
+- [Aviso de privacidade do Talume](https://talume.app.br/Privacy) e [procedimentos de LGPD](docs/LGPD.md).
+- [Segurança e ativação do isolamento no PostgreSQL](docs/SEGURANCA.md).
